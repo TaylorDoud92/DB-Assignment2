@@ -3,18 +3,29 @@ package gui;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.CallableStatement;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+
+//import persistence.clientale.String;
+
 import javax.swing.JButton;
-import javax.swing.JDialog;
+import javax.swing.JDialog;	
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.sql.ResultSet;
 
 
 public class GUI {
 
-	private JFrame frame;
+	JFrame frame;
 	
 	//GUI TextFields
 	private JTextField delimitedFileTextField;
@@ -34,33 +45,18 @@ public class GUI {
 	private JButton btnClose;
 	
 	private JDialog Login;
-	private JLabel lblStepLogin;
-	private JButton btnLogin;
+
 	
+	private Connection conn;
+	final static String HOSTNAME = "localhost";
+	final static String PORT = "1521";
 	
-	
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					GUI window = new GUI();
-					window.frame.setVisible(true);
-					window.frame.setResizable(false);
-					window.frame.setTitle("Integration Assignment");
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the application.
 	 */
-	public GUI() {
+	public GUI(Connection conn) {
+		this.conn = conn;
 		initialize();
 	}
 
@@ -69,68 +65,59 @@ public class GUI {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 560, 314);
+		frame.setBounds(100, 100, 634, 274);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
 		lblStep1 = new JLabel("Step 1: Check Payroll Load Okay");
-		lblStep1.setBounds(38, 69, 164, 14);
+		lblStep1.setBounds(34, 17, 200, 14);
 		frame.getContentPane().add(lblStep1);
 		
 		lblStep2 = new JLabel("Step 2: Process Delimited Text File");
-		lblStep2.setBounds(38, 103, 178, 14);
+		lblStep2.setBounds(34, 51, 213, 14);
 		frame.getContentPane().add(lblStep2);
 		
 		lblDelimitedFile = new JLabel("Delimited File:");
-		lblDelimitedFile.setBounds(38, 136, 128, 14);
+		lblDelimitedFile.setBounds(34, 84, 128, 14);
 		frame.getContentPane().add(lblDelimitedFile);
 		
 		lblStep3 = new JLabel("Step 3: Perform Month End");
-		lblStep3.setBounds(38, 168, 178, 14);
+		lblStep3.setBounds(34, 116, 178, 14);
 		frame.getContentPane().add(lblStep3);
 		
 		lblStep4 = new JLabel("Step 4: Export Data");
-		lblStep4.setBounds(38, 202, 178, 14);
+		lblStep4.setBounds(34, 150, 178, 14);
 		frame.getContentPane().add(lblStep4);
 		
 		delimitedFileTextField = new JTextField();
-		delimitedFileTextField.setBounds(218, 133, 289, 20);
+		delimitedFileTextField.setBounds(288, 81, 289, 20);
 		frame.getContentPane().add(delimitedFileTextField);
 		delimitedFileTextField.setColumns(10);
 		
 		btnCheck = new JButton("Check");
 		btnCheck.addActionListener(new MyActionListener());
-		btnCheck.setBounds(218, 65, 164, 23);
+		btnCheck.setBounds(288, 13, 164, 23);
 		frame.getContentPane().add(btnCheck);
 		
 		btnProcess = new JButton("Process");
 		btnProcess.addActionListener(new MyActionListener());
-		btnProcess.setBounds(218, 99, 164, 23);
+		btnProcess.setBounds(288, 47, 164, 23);
 		frame.getContentPane().add(btnProcess);
 		
 		btnPerform = new JButton("Perform");
 		btnPerform.addActionListener(new MyActionListener());
-		btnPerform.setBounds(218, 164, 164, 23);
+		btnPerform.setBounds(288, 112, 164, 23);
 		frame.getContentPane().add(btnPerform);
 		
 		btnExport = new JButton("Export");
 		btnExport.addActionListener(new MyActionListener());
-		btnExport.setBounds(218, 198, 164, 23);
+		btnExport.setBounds(288, 146, 164, 23);
 		frame.getContentPane().add(btnExport);
 		
 		btnClose = new JButton("Close");
 		btnClose.addActionListener(new MyActionListener());
-		btnClose.setBounds(445, 242, 89, 23);
+		btnClose.setBounds(515, 190, 89, 23);
 		frame.getContentPane().add(btnClose);
-		
-		lblStepLogin = new JLabel("Step 1: Login");
-		lblStepLogin.setBounds(38, 35, 164, 14);
-		frame.getContentPane().add(lblStepLogin);
-		
-		btnLogin = new JButton("Login");
-		btnLogin.addActionListener(new MyActionListener());
-		btnLogin.setBounds(218, 31, 164, 23);
-		frame.getContentPane().add(btnLogin);
 	}
 	
 	private class MyActionListener implements ActionListener {
@@ -138,29 +125,56 @@ public class GUI {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			
-//			if(e.getSource() == btnLogin){
-//				
-//			}
-			
 			if(e.getSource() == btnCheck) {
-				
+				System.out.println("This is " + checkFlag());
 			}
 			
 			if(e.getSource() == btnProcess) {
+				processDelimitedFile();
 				
 			}
 			
 			if(e.getSource() == btnPerform) {
-
+				performMonthEnd();
 			}
 			
 			if(e.getSource() == btnExport) {
-				
+				exportData();
 			}
 			
 			if(e.getSource() == btnClose) {
 				System.exit(0);
 			}
 		}
+	}
+
+	public Boolean checkFlag() {
+		try {
+			String sql = "{ ? = call IsPayrollRunning() }";
+			CallableStatement statement = conn.prepareCall(sql);
+			statement.registerOutParameter(1, java.sql.Types.CHAR);  
+			statement.executeUpdate();
+			String inUse = statement.getString(1);
+			if (inUse.equals("N")) // Means payroll is not in use
+				return false;
+		} catch (Exception e) {
+
+		}
+		return true;		
+	}
+
+	public void exportData() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void performMonthEnd() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void processDelimitedFile() {
+		// TODO Auto-generated method stub
+		
 	}
 }
