@@ -18,7 +18,7 @@ import javax.swing.JButton;
 
 public class ExportFile {
 
-	private JFrame frame;
+	JFrame frame;
 	private JTextField fieldPath;
 	private JTextField fieldName;
 	private JTextField fieldAlias;
@@ -31,7 +31,7 @@ public class ExportFile {
 	
 	private String username;
 	private String password;
-	private JTextField messageField;
+	private JLabel messageField;
 
 	/**
 	 * Create the application.
@@ -84,10 +84,9 @@ public class ExportFile {
 		frame.getContentPane().add(btnSubmit);
 		btnSubmit.addActionListener(new MyActionListener());
 		
-		messageField = new JTextField();
+		messageField = new JLabel();
 		messageField.setBounds(175, 163, 86, 20);
 		frame.getContentPane().add(messageField);
-		messageField.setColumns(10);
 	}
 	
 	
@@ -107,10 +106,7 @@ public class ExportFile {
 					messageField.setText("Export Failed for some reason. Please try again later.");
 				}
 			}
-			
 		}
-		
-		
 	}
 	
 	private void exportData(String alias, String directory, String fileName){

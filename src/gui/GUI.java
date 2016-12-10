@@ -164,7 +164,10 @@ public class GUI {
 			
 			if(e.getSource() == btnExport) {
 
-				new ExportFile(conn,username,password);
+				ExportFile file = new ExportFile(conn,username,password);
+				file.frame.setVisible(true);
+				file.frame.setResizable(false);
+				file.frame.setTitle("Integration Assignment");
 			}
 			
 			if(e.getSource() == btnClose) {
