@@ -10,6 +10,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
+import oracle.jdbc.OracleTypes;
+
 //import persistence.clientale.String;
 
 import javax.swing.JButton;
@@ -43,19 +45,18 @@ public class GUI {
 	private JButton btnPerform;
 	private JButton btnExport;
 	private JButton btnClose;
-	
-	private JDialog Login;
 
 	
 	private Connection conn;
 	final static String HOSTNAME = "localhost";
 	final static String PORT = "1521";
+	private JLabel lblMessage;
 	
 
 	/**
 	 * Create the application.
 	 */
-	public GUI(Connection conn) {
+	public GUI(Connection conn,String username, String password) {
 		this.conn = conn;
 		initialize();
 	}
@@ -118,15 +119,31 @@ public class GUI {
 		btnClose.addActionListener(new MyActionListener());
 		btnClose.setBounds(515, 190, 89, 23);
 		frame.getContentPane().add(btnClose);
+		
+		lblMessage = new JLabel("");
+		lblMessage.setBounds(101, 194, 351, 14);
+		frame.getContentPane().add(lblMessage);
 	}
 	
 	private class MyActionListener implements ActionListener {
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			
 			if(e.getSource() == btnCheck) {
-				System.out.println("This is " + checkFlag());
+				if(checkFlag()){
+					lblMessage.setText("Payroll is good to go!");
+					btnProcess.setEnabled(true);
+					btnPerform.setEnabled(true);
+					btnExport.setEnabled(true);
+					btnClose.setEnabled(true);
+				} else {
+					lblMessage.setText("Payroll is in use and cannot be processed at this time.");
+					btnProcess.setEnabled(false);
+					btnPerform.setEnabled(false);
+					btnExport.setEnabled(false);
+					btnClose.setEnabled(false);
+				}
 			}
 			
 			if(e.getSource() == btnProcess) {
@@ -148,20 +165,7 @@ public class GUI {
 		}
 	}
 
-	public Boolean checkFlag() {
-		try {
-			String sql = "{ ? = call IsPayrollRunning() }";
-			CallableStatement statement = conn.prepareCall(sql);
-			statement.registerOutParameter(1, java.sql.Types.CHAR);  
-			statement.executeUpdate();
-			String inUse = statement.getString(1);
-			if (inUse.equals("N")) // Means payroll is not in use
-				return false;
-		} catch (Exception e) {
 
-		}
-		return true;		
-	}
 
 	public void exportData() {
 		// TODO Auto-generated method stub
@@ -173,8 +177,55 @@ public class GUI {
 		
 	}
 
-	public void processDelimitedFile() {
-		// TODO Auto-generated method stub
+	private void processDelimitedFile() {
 		
+		String cmdLine;
+		
+		
+		
+		
+		
+		
+//		Runtime rt = Runtime.getRuntime();
+//		Process proc = rt.exec(cmdLine);
+//		exitValue = proc.wait();
+//		
+//		if(exitValue){
+//			
+//		}
+		
+	}
+	
+//	public Boolean checkFlag() {
+//		try {
+//			String sql = "{ ? = call IsPayrollRunning() }";
+//			CallableStatement statement = conn.prepareCall(sql);
+//			statement.registerOutParameter(1, java.sql.Types.CHAR);  
+//			statement.executeUpdate();
+//			String inUse = statement.getString(1);
+//			if (inUse.equals("N")) // Means payroll is not in use
+//				return false;
+//		} catch (Exception e) {
+//
+//		}
+//		return true;		
+//	}
+	
+	private boolean checkFlag(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{? = call func_check_payroll()}");
+			cstmt.registerOutParameter(1, OracleTypes.VARCHAR);
+			cstmt.executeUpdate();
+			char result = cstmt.getString(1).charAt(0);
+			if(result == 'Y')
+				return true;
+			else
+				return false;
+		} catch (SQLException e) {
+			System.out.println("Prepared Call failed");
+			e.printStackTrace();
+		}
+		return false;		
 	}
 }
