@@ -19,6 +19,7 @@ import javax.swing.JDialog;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
@@ -52,12 +53,17 @@ public class GUI {
 	final static String PORT = "1521";
 	private JLabel lblMessage;
 	
+	private String username;
+	private String password;
+	
 
 	/**
 	 * Create the application.
 	 */
 	public GUI(Connection conn,String username, String password) {
 		this.conn = conn;
+		this.username = username;
+		this.password = password;
 		initialize();
 	}
 
@@ -132,6 +138,7 @@ public class GUI {
 			
 			if(e.getSource() == btnCheck) {
 				if(checkFlag()){
+//					setProcessFlagFalse();
 					lblMessage.setText("Payroll is good to go!");
 					btnProcess.setEnabled(true);
 					btnPerform.setEnabled(true);
@@ -156,7 +163,8 @@ public class GUI {
 			}
 			
 			if(e.getSource() == btnExport) {
-				exportData();
+
+				new ExportFile(conn,username,password);
 			}
 			
 			if(e.getSource() == btnClose) {
@@ -164,20 +172,14 @@ public class GUI {
 			}
 		}
 	}
-
-
-
-	public void exportData() {
-		// TODO Auto-generated method stub
-		
-	}
-
 	public void performMonthEnd() {
 		if(checkMonthEndFlag()){
+			
 			lblMessage.setText("Month end is good to go!");
 			changeMonthEndFlagToFalse();
 			zeroAccounts();
 			changeMonthEndFlagToTrue();
+		
 		} else {
 			lblMessage.setText("Month end is NOT good to go!");
 		}
@@ -203,20 +205,21 @@ public class GUI {
 		
 	}
 	
-//	public Boolean checkFlag() {
-//		try {
-//			String sql = "{ ? = call IsPayrollRunning() }";
-//			CallableStatement statement = conn.prepareCall(sql);
-//			statement.registerOutParameter(1, java.sql.Types.CHAR);  
-//			statement.executeUpdate();
-//			String inUse = statement.getString(1);
-//			if (inUse.equals("N")) // Means payroll is not in use
-//				return false;
-//		} catch (Exception e) {
-//
-//		}
-//		return true;		
-//	}
+	private void exportData(String alias, String directory, String fileName){
+		Statement stmt;
+		try {
+			stmt = conn.createStatement();
+			String query = "CREATE OR REPLACE DIRECTORY " + alias +  " AS '" + directory + "'";
+			stmt.executeUpdate(query);
+			String sql = "{call proc_populate_export_file(?,?)}";
+			CallableStatement statement = conn.prepareCall(sql);
+			statement.setString(1, alias);
+			statement.setString(2, fileName);
+			statement.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	private boolean checkFlag(){
 		CallableStatement cstmt;
@@ -234,6 +237,25 @@ public class GUI {
 			e.printStackTrace();
 		}
 		return false;		
+	}
+	
+	private void setProcessFlagFalse(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{call proc_set_flag_false()}"); 
+			cstmt.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	private void setProcessFlagTrue(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{call proc_set_flag_true()}"); 
+			cstmt.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private boolean checkMonthEndFlag(){

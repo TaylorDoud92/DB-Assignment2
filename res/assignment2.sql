@@ -179,7 +179,38 @@ BEGIN
  END;
  /
  
+ --Step 4
+ --Export to File
  
+ CREATE OR REPlACE procedure proc_populate_export_file
+ (p_alias IN VARCHAR2, p_filename IN VARCHAR2)
+ IS
+ 
+ CURSOR cur_trans IS
+ SELECT * 
+ FROM new_transactions
+ FOR UPDATE;
+
+ v_file				UTL_FILE.FILE_TYPE;
+ 
+ BEGIN
+	 
+	 SELECT USER
+	 INTO v_user
+	 FROM DUAL;
+	 
+	 v_file := UTL_FILE.FOPEN(p_alias,p_filename,'W');
+	 
+	 FOR rec_account IN cur_trans LOOP
+	
+	 UTL_FILE.PUT_LINE(v_file, USER || ';' || rec_account.Transaction_no || ';' || rec_account.transaction_date || ';' || rec_account.description || ';' ||rec_account.Account_no|| ';' || rec_account.transaction_type || ';' || rec_account.transaction_amount);
+	 
+	 END LOOP;
+  	
+	 UTL_FILE.fclose(v_file);
+ END;
+ /
+s
  --Step 5
  --Access Log table creation
 CREATE TABLE ACCESS_LOG
