@@ -173,7 +173,14 @@ public class GUI {
 	}
 
 	public void performMonthEnd() {
-		// TODO Auto-generated method stub
+		if(checkMonthEndFlag()){
+			lblMessage.setText("Month end is good to go!");
+			changeMonthEndFlagToFalse();
+			zeroAccounts();
+			changeMonthEndFlagToTrue();
+		} else {
+			lblMessage.setText("Month end is NOT good to go!");
+		}
 		
 	}
 
@@ -227,5 +234,54 @@ public class GUI {
 			e.printStackTrace();
 		}
 		return false;		
+	}
+	
+	private boolean checkMonthEndFlag(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{? = call func_check_month_end()}");
+			cstmt.registerOutParameter(1, OracleTypes.VARCHAR);
+			char result = cstmt.getString(1).charAt(0);
+			if(result == 'Y')
+				return true;
+			else
+				return false;
+		} catch (SQLException e) {
+			System.out.println("Prepared call failed");
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	private void changeMonthEndFlagToFalse(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{call proc_set_monthendflag_false()}"); 
+			cstmt.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void changeMonthEndFlagToTrue(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{call proc_set_monthendflag_false()}"); 
+			cstmt.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void zeroAccounts(){
+		CallableStatement cstmt;
+		try {
+			cstmt = conn.prepareCall("{call proc_balance_rev()}"); 
+			cstmt.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 }
