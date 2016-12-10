@@ -3,6 +3,9 @@ package gui;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.CallableStatement;
 
 import javax.swing.JFrame;
@@ -138,7 +141,7 @@ public class GUI {
 			
 			if(e.getSource() == btnCheck) {
 				if(checkFlag()){
-//					setProcessFlagFalse();
+					setProcessFlagFalse();
 					lblMessage.setText("Payroll is good to go!");
 					btnProcess.setEnabled(true);
 					btnPerform.setEnabled(true);
@@ -155,6 +158,7 @@ public class GUI {
 			
 			if(e.getSource() == btnProcess) {
 				processDelimitedFile();
+				setProcessFlagTrue();
 				
 			}
 			
@@ -190,40 +194,78 @@ public class GUI {
 	}
 
 	private void processDelimitedFile() {
-		
+		String fileLocation;
 		String cmdLine;
+		Process proc;
+		int exitValue = 0;
 		
 		
+		fileLocation = delimitedFileTextField.getText();
 		
 		
+		int nameIndex = fileLocation.lastIndexOf("/");
+		
+		if(fileLocation == null){
+			
+			nameIndex = fileLocation.lastIndexOf("\\");
+		}			
+		
+		String fileName = fileLocation.substring(nameIndex+1, fileLocation.indexOf('.', nameIndex));
+		fileLocation.substring(0,nameIndex);
+		
+	    try {
+			PrintWriter pw = new PrintWriter(fileName + ".ctl");
+			pw.println("LOAD DATA");
+			pw.println("INFILE" +"'"+fileLocation+"'");
+			pw.println("REPLACE");
+			pw.println("INTO TABLE PAYROLL_LOAD");
+			pw.println("FIELDS TERMINATED BY ';'");
+			pw.println("(Payroll_date");
+			pw.println("Employee_id");
+			pw.println("Amount");
+			pw.println("Status)");
+			pw.close();
+			
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+	    
+		
+		cmdLine = "sqlldr "+ username + "/" + password+", control="+ fileName +".ctl";
 		
 		
-//		Runtime rt = Runtime.getRuntime();
-//		Process proc = rt.exec(cmdLine);
-//		exitValue = proc.wait();
-//		
-//		if(exitValue){
-//			
-//		}
-		
-	}
+	try {
+		Runtime rt = Runtime.getRuntime();
 	
-	private void exportData(String alias, String directory, String fileName){
-		Statement stmt;
-		try {
-			stmt = conn.createStatement();
-			String query = "CREATE OR REPLACE DIRECTORY " + alias +  " AS '" + directory + "'";
-			stmt.executeUpdate(query);
-			String sql = "{call proc_populate_export_file(?,?)}";
-			CallableStatement statement = conn.prepareCall(sql);
-			statement.setString(1, alias);
-			statement.setString(2, fileName);
-			statement.execute();
-		} catch (SQLException e) {
+			proc = rt.exec(cmdLine);
+			exitValue = proc.waitFor();
+		} catch (InterruptedException | IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		if(exitValue==0){
+			
+		}
+		
 	}
 	
+//	private void exportData(String alias, String directory, String fileName){
+//		Statement stmt;
+//		try {
+//			stmt = conn.createStatement();
+//			String query = "CREATE OR REPLACE DIRECTORY " + alias +  " AS '" + directory + "'";
+//			stmt.executeUpdate(query);
+//			String sql = "{call proc_populate_export_file(?,?)}";
+//			CallableStatement statement = conn.prepareCall(sql);
+//			statement.setString(1, alias);
+//			statement.setString(2, fileName);
+//			statement.execute();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//	}
+//	
 	private boolean checkFlag(){
 		CallableStatement cstmt;
 		try {
@@ -299,6 +341,7 @@ public class GUI {
 	}
 	
 	private void zeroAccounts(){
+
 		CallableStatement cstmt;
 		try {
 			cstmt = conn.prepareCall("{call proc_balance_rev()}"); 
